@@ -75,6 +75,9 @@ foreach (var config in JsonSerializer.Deserialize<Config[]>(
         {
             foreach (var label in config.Labels)
             {
+                if (label.Repos?.Length > 0 && !label.Repos.Contains(repoName))
+                    continue;
+
                 var match = labels.FirstOrDefault(l => l.Name == label.Name);
                 if (match != null)
                 {
@@ -92,10 +95,28 @@ foreach (var config in JsonSerializer.Deserialize<Config[]>(
                 else
                 {
                     "Doesn't have, creating.".DumpDebug();
+                    label.Name.DumpDebug();
                     await github.Issue.Labels.Create(repo.Id, new NewLabel(label.Name, label.Color)
                     {
                         Description = label.Description
                     });
+                }
+            }
+
+            if (config.DeleteUnknownLabels ?? false) {
+                foreach (var label in labels)
+                {
+                    var match = config.Labels.FirstOrDefault(l => l.Name == label.Name);
+                    if (match == null)
+                    {
+                        if (config.ExcludeLabelDeletion?.Contains(label.Name) ?? false) {
+                            "Label is excluded from deletion".DumpDebug();
+                        } else {
+                            "Doesn't exist anymore, deleting.".DumpDebug();
+                            label.Name.DumpDebug();
+                            await github.Issue.Labels.Delete(repo.Id, label.Name);
+                        }
+                    }
                 }
             }
         }
@@ -123,6 +144,8 @@ class Config
     public string[] Repositories { get; set; }
     public string[]? ExcludeFromLabelSync { get; set; }
     public string[]? ExcludeFromMilestoneSync { get; set; }
+    public string[]? ExcludeLabelDeletion { get; set; }
+    public bool? DeleteUnknownLabels { get; set; }
     public Milestone[] Milestones { get; set; }
     public Label[] Labels { get; set; }
 }
@@ -139,4 +162,5 @@ class Label
     public string Name { get; set; }
     public string Color { get; set; }
     public string Description { get; set; }
+    public string[]? Repos { get; set; }
 }
