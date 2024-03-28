@@ -103,15 +103,19 @@ foreach (var config in JsonSerializer.Deserialize<Config[]>(
                 }
             }
 
-            if (config.DeleteUnknownLabels ?? false) {
+            if (config.DeleteUnknownLabels ?? false)
+            {
                 foreach (var label in labels)
                 {
                     var match = config.Labels.FirstOrDefault(l => l.Name == label.Name);
                     if (match == null)
                     {
-                        if (config.ExcludeLabelDeletion?.Contains(label.Name) ?? false) {
+                        if (config.ExcludeLabelDeletion?.Contains(label.Name) ?? false)
+                        {
                             "Label is excluded from deletion".DumpDebug();
-                        } else {
+                        }
+                        else
+                        {
                             "Doesn't exist anymore, deleting.".DumpDebug();
                             label.Name.DumpDebug();
                             await github.Issue.Labels.Delete(repo.Id, label.Name);
