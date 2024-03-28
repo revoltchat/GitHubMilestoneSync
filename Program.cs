@@ -63,6 +63,27 @@ foreach (var config in JsonSerializer.Deserialize<Config[]>(
                     });
                 }
             }
+
+            if (config.DeleteUnknownMilestones ?? false)
+            {
+                foreach (var mile in milestones)
+                {
+                    var match = config.Milestones.FirstOrDefault(m => m.Title == mile.Title);
+                    if (match == null)
+                    {
+                        if (config.ExcludeMilestoneDeletion?.Contains(mile.Title) ?? false)
+                        {
+                            "Milestone is excluded from deletion".DumpDebug();
+                        }
+                        else
+                        {
+                            "Doesn't exist anymore, deleting.".DumpDebug();
+                            mile.Title.DumpDebug();
+                            await github.Issue.Milestone.Delete(repo.Id, mile.Number);
+                        }
+                    }
+                }
+            }
         }
         else
         {
@@ -148,7 +169,9 @@ class Config
     public string[] Repositories { get; set; }
     public string[]? ExcludeFromLabelSync { get; set; }
     public string[]? ExcludeFromMilestoneSync { get; set; }
+    public string[]? ExcludeMilestoneDeletion { get; set; }
     public string[]? ExcludeLabelDeletion { get; set; }
+    public bool? DeleteUnknownMilestones { get; set; }
     public bool? DeleteUnknownLabels { get; set; }
     public Milestone[] Milestones { get; set; }
     public Label[] Labels { get; set; }
@@ -159,6 +182,7 @@ class Milestone
     public string Title { get; set; }
     public string State { get; set; }
     public string Description { get; set; }
+    public string[]? Repos { get; set; }
 }
 
 class Label
